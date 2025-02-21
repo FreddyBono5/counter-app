@@ -20,6 +20,11 @@ export class CounterApp extends DDDSuper(I18NMixin(LitElement)) {
 
   constructor() {
     super();
+    this.isMin = false;
+    this.isMax = false;
+    this.count = 0;
+    this.max = 0;
+    this.min = 0;
     this.title = "";
     this.t = this.t || {};
     this.t = {
@@ -40,6 +45,12 @@ export class CounterApp extends DDDSuper(I18NMixin(LitElement)) {
     return {
       ...super.properties,
       title: { type: String },
+      count: { type: Number, reflect: true },
+      min: { type: Number, reflect: true },
+      max: { type: Number, reflect: true },
+      isMin: { type: Boolean, reflect: true },
+      isMax: { type: Boolean, reflect: true },
+
     };
   }
 
@@ -47,7 +58,50 @@ export class CounterApp extends DDDSuper(I18NMixin(LitElement)) {
   static get styles() {
     return [super.styles,
     css`
-      :host {
+
+
+button:focus,
+button:hover {
+  background-color: var(--ddd-theme-default-creekTeal);
+}
+
+button:active
+{
+  background-color: var(--ddd-theme-default-globalNeon) !important;
+}
+
+
+button
+{
+    padding: 3px;
+    margin: 32px;
+    border: 4px solid black;
+    width: 60px;
+    font-size: 32px;
+}
+
+:host([isMin]) .counter {
+      color: var(--ddd-theme-default-original87Pink);
+        }
+:host([isMax]) .counter {
+      color: var(--ddd-theme-default-futureLime);
+        }
+
+.counter{
+  font-size: 100px;
+}
+    :host([count = '18']){
+        color: var(--ddd-theme-default-keystoneYellow);
+    }
+    :host([count = '21']){
+        color: var(--ddd-theme-default-skyBlue);
+    }
+
+  
+
+
+
+    :host {
         display: block;
         color: var(--ddd-theme-primary);
         background-color: var(--ddd-theme-accent);
@@ -58,7 +112,7 @@ export class CounterApp extends DDDSuper(I18NMixin(LitElement)) {
         padding: var(--ddd-spacing-4);
       }
       h3 span {
-        font-size: var(--counter-app-label-font-size, var(--ddd-font-size-s));
+        font-size: var(--counter-app-label-font-size, var(--ddd-font-size-xxl));
       }
     `];
   }
@@ -67,10 +121,106 @@ export class CounterApp extends DDDSuper(I18NMixin(LitElement)) {
   render() {
     return html`
 <div class="wrapper">
-  <h3><span>${this.t.title}:</span> ${this.title}</h3>
-  <slot></slot>
+  <confetti-container id="confetti"> 
+
+    <div class="counter">${this.count}</div>
+ 
+    <div class="buttons">
+      <button class = "min" @click="${this.disableButtonMin}">-1</button> 
+      <button class="max" @click="${this.disableButtonMax}">+1</button>
+    </div>
+  </confetti-container>
+
 </div>`;
   }
+  increase(){
+this.count++;
+  }
+  decrease(){
+this.count--;
+  }
+  reset()
+  {
+this.count = 0;
+  }
+
+
+ disableButtonMin() {
+  let minButton = document.getElementsByClassName("min");
+    if (this.min !== this.count)
+      {
+        minButton.disabled = false;
+        this.count--;
+        this.isMin = false;
+        this.isMax = false;
+        if (this.count == (this.min))
+        {
+          this.isMin = true;
+        }
+      }
+      else
+      {
+        minButton.disabled = true;
+      }
+      if (this.count == 21)
+        {
+          this.makeItRain();
+        }
+      
+    
+  }
+  disableButtonMax() {
+    let maxButton = document.getElementsByClassName("max");
+      if (this.max !== this.count)
+        {
+          this.isMin = false;
+          this.isMax = false;
+          maxButton.disabled = false;
+          this.count++;
+          if (this.count == (this.max))
+            {
+              this.isMax = true;
+            }
+        }
+        else
+        {
+          maxButton.disabled = true;
+        }
+        if (this.count == 21)
+          {
+            this.makeItRain();
+          }
+        
+      
+    }
+
+    
+
+    updated(changedProperties) {
+      if (super.updated) {
+        super.updated(changedProperties);
+      }
+      if (changedProperties.has('counter')) {
+        this.makeItRain();
+      }
+    }
+    
+    makeItRain() {
+      import("@haxtheweb/multiple-choice/lib/confetti-container.js").then(
+        (module) => {
+          // This is a minor timing 'hack'. We know the code library above will import prior to this running
+          // The "set timeout 0" means "wait 1 microtask and run it on the next cycle.
+          // this "hack" ensures the element has had time to process in the DOM so that when we set popped
+          // it's listening for changes so it can react
+          setTimeout(() => {
+            // forcibly set the poppped attribute on something with id confetti
+            // while I've said in general NOT to do this, the confetti container element will reset this
+            // after the animation runs so it's a simple way to generate the effect over and over again
+            this.shadowRoot.querySelector("#confetti").setAttribute("popped", "");
+          }, 0);
+        }
+      );
+    }
 
   /**
    * haxProperties integration via file reference
